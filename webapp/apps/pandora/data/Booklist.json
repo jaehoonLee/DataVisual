@@ -1,0 +1,18 @@
+{
+    "totalCount": 2,
+    "books": [
+        //'subject', 'writer', 'publisher', 'rent_check'
+        {
+            "subject" : "먼나라 이웃나라",
+            "writer" : "이원복",
+            "publisher" : "김영사",
+            "rent_check" : false
+        },
+        {
+            "subject" : "삼국지",
+            "writer" : "이문열",
+            "publisher" : "민흥사",
+            "rent_check" : true
+        }
+    ]
+}

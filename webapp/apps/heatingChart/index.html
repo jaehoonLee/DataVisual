@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<meta charset="UTF-8">
+<style>
+
+    body {
+        font: 10px sans-serif;
+    }
+
+    .arc path {
+        stroke: #fff;
+    }
+
+    .palette {
+        cursor: pointer;
+        display: inline-block;
+        vertical-align: bottom;
+        margin: 4px 0 4px 6px;
+        padding: 4px;
+        background: #fff;
+        border: solid 1px #aaa;
+    }
+
+    .swatch {
+        display: block;
+        vertical-align: middle;
+        width: 37px;
+        height: 22px;
+    }
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/colorbrewer.v1.min.js"></script>
+<script>
+
+    var config = {
+        'panel' : '#test',
+        'margin': {top: 3, right: 10, bottom: 10, left: 30},
+        'width': 960,
+        'height': 500,
+        'colorbrewer': 'Spectral',
+        'numberOfColor' : '11'
+        'xAxis': {range: 'ordinal', orient : 'top'},
+        'yAxis': {range : 'ordinal', orient : 'left' }
+    };
+
+    var color  = colorbrewer['Spectral']['11'].reverse();
+    var panel;
+    /*
+     *   heating Chart
+     * */
+    var margin = {top: 30, right: 10, bottom: 10, left: 30},
+            width = 960 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+    var x = d3.scale.ordinal()
+            .rangeRoundBands([0, width],.1);
+
+    var y = d3.scale.ordinal()
+            .rangeRoundBands([0, height], .03);
+
+    var buckets = 11;
+
+    //var color  = colorbrewer.Spectral['11'].reverse();
+    //["#5E4FA2", "#3288BD", "#3288BD", "#ABDDA4", "#E6F598", "#f6faaa", "#FEE08B", "#FDAE61","#F46D43","#D53E4F","#9E0142"];
+    var colorScale=d3.scale.quantile().range(color);
+    var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("top");
+
+    var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+    var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.tsv("data.tsv", function(error, data) {
+
+        x.domain(data.map(function(d) { return d.day; }));
+        y.domain(d3.keys(data[0]).filter(function(key) { return key !== "day"; }));
+        //colorScale.domain([1,2,3,4,5,6,7,8,9,10,11]);
+        colorScale.domain([1, buckets , d3.max(data, function (d) {            //모르겟다   왜 d3.max 가 9가나오는지?
+            console.log(d.value);
+            return d.value; })]);
+
+        var maximum;
+        data.forEach(function(d) {
+            d.hours = x.domain().map(function(hour) {
+
+                return {uses: d[hour]};
+            });
+            d.days = y.domain().map(function(hour) {
+                maximum = d3.max(data, function(d){
+                    //console.log(d[hour]);
+                    return d[hour];});
+                //console.log("최대:",maximum);
+                return {value: d[hour]};
+            });
+
+
+            //d.hours.forEach(function(d) { d.color =  });
+        });
+
+//        var colorScale = d3.scale.quantile()            // 수가 정확하게 나눠져있지 않고 통계적기법을 사용할 때 씀.
+//                .domain([1, 2, 3, 4, 5,6 ,7, 8, 9, 10, 11
+//                ])
+//                .range(color);
+//        console.log(colorScale.quantiles());
+
+
+        svg.append("g")
+                .attr("class", "x axis")
+                .call(xAxis);
+
+        svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis);
+
+        panel = svg.selectAll(".hour")
+                .data(data)
+                .enter().append("g")
+                .attr("class", "hour")
+                .attr("transform", function(d) { return "translate(" + x(d.day) + ",0)"; });
+
+        panel.selectAll(".panel")
+                .data(function(d){
+                    return d.days;})
+                .enter().append("rect")
+                .attr("class", "panel")
+                .attr("y", function(d,i) {
+                    var v = i * (x.rangeBand()) *2;        //더 개선할 수 있을 것 같은데.
+                    return y(d)+v;})
+                .attr("width", x.rangeBand())
+                .attr("height", y.rangeBand())
+                .style("fill", function(d) {
+                    return colorScale(d.value); });
+
+    });
+    var paint = function(panel){
+        colorScale=d3.scale.quantile().range(color);
+        console.log("paint함수 안 ", panel);
+        console.log(colorScale);
+        panel.selectAll(".panel")
+                .data(function(d){
+                    return d.days;})
+                .enter().append("rect")
+                .attr("class", "panel")
+                .attr("y", function(d,i) {
+                    var v = i * (x.rangeBand()) *2;        //모르겠다
+                    return y(d)+v;})
+                .attr("width", x.rangeBand())
+                .attr("height", y.rangeBand())
+                .style("fill", function(d) {
+                    return colorScale(d.value); });
+    }
+
+    /*
+     *   color brewer sample
+     * */
+    colorbrewer = colorbrewer;
+
+
+    d3.select("body")
+            .selectAll(".palette")
+            .data(d3.entries(colorbrewer))
+            .enter().append("span")
+            .attr("class", "palette")
+            .attr("title", function(d) { return d.key; })
+            .on("click", function(d) {
+                console.log(d.key);
+                console.log(d3.values(d.value).map(JSON.stringify).join("\n")); })
+            .selectAll(".swatch")
+            .data(function(d) {
+                return d.value[d3.keys(d.value).map(Number).sort(d3.descending)[0]]; })
+            .enter().append("span")
+            .attr("class", "swatch")
+            .style("background-color", function(d) { return d; });
+
+</script>
+
+</body>
+</html>

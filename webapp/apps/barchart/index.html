@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<style>
+
+    body {
+        font: 10px sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .bar {
+        fill: steelblue;
+    }
+
+    .x.axis path {
+        display: none;
+    }
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+
+    var config = {
+        'margin': {top: 20, right: 20, bottom: 30, left: 40},
+        'width': 960,
+        'height': 500,
+        'format': '.0%',
+        'xAxis': {range : 'ordinal', orient : 'bottom' },
+        'yAxis': {range : 'linear', orient : 'left'}
+    };
+
+
+    var Axis = function (config){
+        this.config = config;
+
+        this.formatPercent = d3.format(config['format']);
+
+        this.x = d3.scale[config['xAxis']['range']]()
+                .rangeRoundBands([0, config['width']], .1);
+
+        this.y = d3.scale[config['yAxis']['range']]()
+                .range([config['height'], 0]);
+
+        this.xAxis = d3.svg.axis()
+                .scale(this.x)
+                .orient(config['xAxis'].orient);
+
+        this.yAxis = d3.svg.axis()
+                .scale(this.y)
+                .orient(config['yAxis'].orient)
+                .tickFormat(this.formatPercent);
+
+        this.svg = d3.select("body").append("svg")
+                .attr("width", config['width'] + config['margin'].left + config['margin'].right)
+                .attr("height", config['height'] + config['margin'].top + config['margin'].bottom)
+                .append("g")
+                .attr("transform", "translate(" + config['margin'].left + "," + config['margin'].top + ")");
+    }
+
+
+    var newAxis =new Axis(config);
+
+
+    d3.tsv("data.tsv", type, function(error, data) {
+        newAxis.x.domain(data.map(function(d) { return d.letter; }));
+        newAxis.y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
+
+        newAxis.svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + config['height'] + ")")
+                .call(newAxis.xAxis);
+
+        newAxis.svg.append("g")
+                .attr("class", "y axis")
+                .call(newAxis.yAxis)
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("Frequency");
+
+        newAxis.svg.selectAll(".bar")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", function(d) { return newAxis.x(d.letter); })
+                .attr("width", newAxis.x.rangeBand())
+                .attr("y", function(d) { return newAxis.y(d.frequency); })
+                .attr("height", function(d) { return config['height'] - newAxis.y(d.frequency); });
+
+    });
+
+    function type(d) {
+        d.frequency = +d.frequency;
+        return d;
+    }
+
+</script>
+
+</body>
+</html>

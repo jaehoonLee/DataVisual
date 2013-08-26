@@ -1,0 +1,124 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+            http://www.springframework.org/schema/context               http://www.springframework.org/schema/context/spring-context-3.2.xsd
+            http://www.springframework.org/schema/task                  http://www.springframework.org/schema/task/spring-task-3.2.xsd
+            http://www.springframework.org/schema/util                  http://www.springframework.org/schema/util/spring-util-3.2.xsd
+            http://www.springframework.org/schema/mvc                   http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd">
+
+    <!-- ========================= ANNOTATION DEFINITION ========================= -->
+
+    <context:component-scan base-package="kr.co.cloudine.template.standalone"/>
+
+    <!-- Enables the Spring MVC @Controller programming model -->
+    <mvc:annotation-driven>
+        <mvc:async-support default-timeout="3000">
+            <mvc:callable-interceptors>
+                <bean class="kr.co.cloudine.template.standalone.controller.TimeoutCallableProcessingInterceptor"/>
+            </mvc:callable-interceptors>
+        </mvc:async-support>
+    </mvc:annotation-driven>
+
+    <!-- ========================= PROPERTY PLACE HOLDER DEFINITION ========================= -->
+
+    <bean name="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"
+          p:ignoreUnresolvablePlaceholders="true" p:ignoreResourceNotFound="true">
+        <property name="locations">
+            <list>
+                <value>/WEB-INF/config.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- ========================= PROPERTIES DEFINITION ========================= -->
+
+    <util:properties id="config" location="/WEB-INF/config.properties"/>
+
+    <!-- ========================= RESOURCE BUNDLE DEFINITION ========================= -->
+
+    <!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources/ directory -->
+    <mvc:resources mapping="/resources/**" location="/resources/"/>
+
+    <!-- Maps '/' requests to the 'home' view -->
+    <mvc:view-controller path="/" view-name="index"/>
+
+    <!-- ========================= RESOURCE BUNDLE DEFINITION ========================= -->
+
+    <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="basenames">
+            <list>
+                <value>classpath:error</value>
+            </list>
+        </property>
+        <property name="defaultEncoding" value="UTF-8"/>
+        <property name="cacheSeconds" value="3000"/>
+    </bean>
+
+    <!-- ========================= VIEW RESOLVER DEFINITION ========================= -->
+
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+        <property name="prefix" value="/WEB-INF/jsp/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <!-- ========================= ADAPTER DEFINITION ========================= -->
+
+    <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+        <property name="messageConverters">
+            <util:list id="beanList">
+                <ref bean="stringHttpMessageConverter"/>
+                <ref bean="jsonConverter"/>
+                <bean class="org.springframework.http.converter.FormHttpMessageConverter">
+                    <property name="charset">
+                        <bean class="java.nio.charset.Charset" factory-method="forName">
+                            <constructor-arg value="UTF-8"/>
+                        </bean>
+                    </property>
+                </bean>
+            </util:list>
+        </property>
+    </bean>
+
+    <!-- ========================= MESSAGE CONVERTER DEFINITION ========================= -->
+
+    <bean id="jsonConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
+        <property name="supportedMediaTypes" value="application/json"/>
+    </bean>
+
+    <bean id="stringHttpMessageConverter" class="org.springframework.http.converter.StringHttpMessageConverter">
+        <property name="supportedMediaTypes">
+            <util:list>
+                <bean class="org.springframework.http.MediaType">
+                    <constructor-arg value="application"/>
+                    <constructor-arg value="json"/>
+                </bean>
+                <bean class="org.springframework.http.MediaType">
+                    <constructor-arg value="application"/>
+                    <constructor-arg value="xml"/>
+                </bean>
+            </util:list>
+        </property>
+    </bean>
+
+    <!-- ========================= EXCEPTION RESOLVER DEFINITION ========================= -->
+
+    <bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <property name="exceptionMappings">
+            <props>
+                <prop key="kr.co.cloudine.template.standalone.exception.RefreshFailureException">error</prop>
+                <prop key="java.lang.Exception">error</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!-- ========================= TASK EXECUTION DEFINITION ========================= -->
+
+    <task:annotation-driven/>
+
+</beans>

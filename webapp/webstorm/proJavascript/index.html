@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+
+<body>
+    <div id = "main">asdf</div>
+</body>
+<script type = "text/javascript">
+    function addGenerator( num ) {
+        console.log(num);
+        return function ( toAdd ){
+            console.log(num , toAdd);
+            return num + toAdd;
+        };
+    }
+
+    var addFive = addGenerator(5);
+
+    console.log(addFive(4));
+
+</script>
+</html>
